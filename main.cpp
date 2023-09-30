@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 using namespace std;
@@ -83,21 +84,78 @@ void printMatrix(vector<vector<int>> m){
     }
 }
 
-int main (){
-    int n = 0, m = 0; 
-    cout << "How many origins will the problem have: ";
-    cin >> n;
-    cout << "How many destinations will the problem have: ";
-    cin >> m;
+int calculate_cost(vector<vector<int>> &cost, vector<vector<int>> &res){
+    int total_cost = 0;
 
-    vector<vector<int>> cost_matrix = getMatrix(n, m, "COST");
-    vector<int> supply = getVector(cost_matrix.size(), "SUPPLY", "origin ");
-    vector<int> demand = getVector(cost_matrix[0].size(), "DEMAND", "destination ");
+    for(int i = 0; i < cost.size(); i++){
+        for(int j = 0; j < cost[i].size(); j++){
+            total_cost += cost[i][j] * res[i][j];
+        }
+    }
+
+    return total_cost;
+}
+
+void getDataManual(vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand);
+void getDataFromFile(string filename,vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand);
+
+int main (int argc, char* argv[]){
+    int n, m;
+    vector<vector<int>> cost_matrix;
+    vector<int> supply;
+    vector<int> demand;
+
+    if(argc == 2){
+        getDataFromFile(argv[1],cost_matrix, supply, demand);
+    } else {
+        getDataManual(cost_matrix, supply, demand);
+    }
 
     balance_cost_matrix(cost_matrix, supply, demand);
     vector<vector<int>> res_matrix = north_west_method(cost_matrix, supply, demand);
 
     printMatrix(res_matrix);
+    int total_cost = calculate_cost(cost_matrix, res_matrix);
+
+    cout << "with total cost: " << total_cost;
 
     return 0;
+}
+
+void getDataManual(vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand){
+    int n, m;
+    cout << "How many origins will the problem have: ";
+    cin >> n;
+    cout << "How many destinations will the problem have: ";
+    cin >> m;
+
+    cost_matrix = getMatrix(n, m, "COST");
+    supply = getVector(cost_matrix.size(), "SUPPLY", "origin ");
+    demand = getVector(cost_matrix[0].size(), "DEMAND", "destination ");
+}
+
+void getDataFromFile(string filename,vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand){
+    int n, m;
+    ifstream f;
+    f.open(filename);
+    f >> n >> m;
+    cost_matrix = vector<vector<int>>(n, vector<int>(m, 0));
+    supply = vector<int>(n, 0);
+    demand = vector<int>(m, 0);
+    
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < m; j++){
+            f >> cost_matrix[i][j]; 
+        }
+    }
+
+    for(int i = 0; i < n; i++){
+        f >> supply[i];
+    }
+
+    for(int j = 0; j < m; j++){
+        f >> demand[j];
+    }
+
+    f.close();
 }
