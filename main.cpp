@@ -25,6 +25,14 @@ vector<vector<int>> getMatrix(int n, int m, string name = ""){
     return data;
 }
 
+int calculate_sum(vector<int> v){
+    int sum = 0;
+    for(int x : v){
+        sum += x;
+    }
+    return sum;
+}
+
 void balance_cost_matrix(vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand){
     int sum_supply = 0, sum_demand = 0;
 
@@ -49,6 +57,69 @@ void balance_cost_matrix(vector<vector<int>> &cost_matrix, vector<int> &supply, 
     }
 
     return;
+}
+
+void cross_supply(vector<vector<bool>> &m, int i){
+    for(int j = 0; j < m[0].size(); j++){
+        m[i][j] = true;
+    }
+}
+
+void cross_demand(vector<vector<bool>> &m, int j){
+    for(int i = 0; i < m.size(); i++){
+        m[i][j] = true;
+    }
+}
+
+vector<vector<int>> least_cost_method(vector<vector<int>> &cost_matrix, vector<int> supply, vector<int> demand){
+    int sum_supply = calculate_sum(supply); 
+    int sum_demand = calculate_sum(demand);
+
+    int n = cost_matrix.size(); 
+    int m = cost_matrix[0].size();
+
+    vector<vector<int>> res(n, vector<int>(m, 0));
+    vector<vector<bool>> crossed(n, vector<bool>(m, false));
+
+    while(sum_supply != 0 && sum_demand != 0){
+        vector<int> min = {0,0};
+
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < m; j++){
+                if(crossed[i][j] == false){
+                    min = {i, j};
+                }
+            }
+        }
+
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < m; j++){
+                if(cost_matrix[i][j] < cost_matrix[min[0]][min[1]] && crossed[i][j] == false){
+                    min = {i, j};
+                }
+            }
+        }
+
+        int i = min[0], j = min[1];
+
+        if (supply[i] < demand[j]){
+            res[i][j] = supply[i];
+            demand[j] -= supply[i];
+            cross_supply(crossed, i);
+            supply[i] = 0;
+        } else {
+            res[i][j] = demand[j];
+            supply[i] -= demand[j];
+            cross_demand(crossed, j);
+            if(supply[i] == 0) cross_supply(crossed, i);
+            demand[j] = 0;
+        }
+
+        sum_supply = calculate_sum(supply);
+        sum_demand = calculate_sum(demand);
+    }
+
+    return res;
 }
 
 vector<vector<int>> north_west_method(vector<vector<int>> &cost_matrix, vector<int> supply, vector<int> demand){
@@ -96,12 +167,14 @@ int calculate_cost(vector<vector<int>> &cost, vector<vector<int>> &res){
     return total_cost;
 }
 
+
+
 void getDataManual(vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand);
 void getDataFromFile(string filename,vector<vector<int>> &cost_matrix, vector<int> &supply, vector<int> &demand);
 
 int main (int argc, char* argv[]){
-    int n, m;
     vector<vector<int>> cost_matrix;
+    vector<vector<int>> res_matrix;
     vector<int> supply;
     vector<int> demand;
 
@@ -112,12 +185,16 @@ int main (int argc, char* argv[]){
     }
 
     balance_cost_matrix(cost_matrix, supply, demand);
-    vector<vector<int>> res_matrix = north_west_method(cost_matrix, supply, demand);
 
+    cout << "\nwith North-West method we get the matrix: \n";
+    res_matrix = north_west_method(cost_matrix, supply, demand);
     printMatrix(res_matrix);
-    int total_cost = calculate_cost(cost_matrix, res_matrix);
+    cout << "with total cost: " << calculate_cost(cost_matrix, res_matrix) << "\n";
 
-    cout << "with total cost: " << total_cost;
+    cout << "\nwith Least-cost method we get the matrix: \n";
+    res_matrix = least_cost_method(cost_matrix, supply, demand);
+    printMatrix(res_matrix);
+    cout << "with total cost: " << calculate_cost(cost_matrix, res_matrix) << "\n";    
 
     return 0;
 }
